@@ -51,7 +51,7 @@ export default async function JadlospisPage() {
                       {meal.label}
                     </p>
                     <p className="mt-2 text-sm text-slate-200">
-                      {entry?.opis || 'Jadłospis nie został jeszcze dodany'}
+                      {entry?.opis || 'Brak jadłospisu'}
                     </p>
                   </div>
                 )

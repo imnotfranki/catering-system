@@ -46,6 +46,9 @@ create table if not exists public.jadlospisy (
   utworzone_o timestamptz default now()
 );
 
+create unique index if not exists jadlospisy_data_posilek_idx
+on public.jadlospisy (data, posilek);
+
 create table if not exists public.dostawy (
   id uuid primary key default gen_random_uuid(),
   placowka_id uuid references public.placowki(id),
@@ -219,6 +222,13 @@ on public.jadlospisy
 for select
 to authenticated
 using (public.current_user_role() = 'kuchnia');
+
+drop policy if exists "wszyscy czytaja jadlospisy" on public.jadlospisy;
+create policy "wszyscy czytaja jadlospisy"
+on public.jadlospisy
+for select
+to authenticated
+using (true);
 
 drop policy if exists "admin full access dostawy" on public.dostawy;
 create policy "admin full access dostawy"
