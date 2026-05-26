@@ -101,7 +101,8 @@ export async function submitTodayOrder(
 
   if (!(await canPlaceTodayOrder())) {
     return {
-      error: 'Termin składania zamówień minął (8:00). Zadzwoń do biura.',
+      error:
+        'Termin składania zamówień minął (8:00). Zadzwoń do biura: +48 530 702 000.',
     }
   }
 
