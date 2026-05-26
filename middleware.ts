@@ -3,14 +3,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { getRoleHome, getUserRole } from '@/lib/auth'
 
-const protectedRoutes = ['/admin', '/placowka', '/kuchnia', '/kierowca']
-
-function isProtectedPath(pathname: string) {
-  return protectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  )
-}
-
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -39,17 +31,26 @@ export async function middleware(req: NextRequest) {
 
   const { pathname } = req.nextUrl
 
-  if (!session && isProtectedPath(pathname)) {
+  if (!session && pathname !== '/auth/login') {
     const redirectUrl = req.nextUrl.clone()
     redirectUrl.pathname = '/auth/login'
-    redirectUrl.searchParams.set('redirectedFrom', pathname)
+    redirectUrl.search = ''
 
     return NextResponse.redirect(redirectUrl)
   }
 
-  if (session && pathname === '/auth/login') {
+  if (session && (pathname === '/' || pathname === '/auth/login')) {
     const role = await getUserRole(supabase)
     const redirectUrl = req.nextUrl.clone()
+
+    if (!role) {
+      await supabase.auth.signOut()
+      redirectUrl.pathname = '/auth/login'
+      redirectUrl.search = ''
+
+      return NextResponse.redirect(redirectUrl)
+    }
+
     redirectUrl.pathname = getRoleHome(role)
     redirectUrl.search = ''
 
@@ -61,10 +62,11 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
     '/admin/:path*',
     '/placowka/:path*',
     '/kuchnia/:path*',
     '/kierowca/:path*',
-    '/auth/login',
+    '/auth/:path*',
   ],
 }
