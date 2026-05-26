@@ -79,7 +79,14 @@ export async function canPlaceTodayOrder(): Promise<boolean> {
     return true
   }
 
-  return new Date().getHours() < 8
+  const deadlineHour = 23
+  const deadlineMinute = 59
+  const now = new Date()
+
+  return (
+    now.getHours() < deadlineHour ||
+    (now.getHours() === deadlineHour && now.getMinutes() < deadlineMinute)
+  )
 }
 
 export async function submitTodayOrder(
