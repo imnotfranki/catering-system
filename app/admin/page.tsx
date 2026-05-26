@@ -23,6 +23,7 @@ export default async function AdminPage() {
     activePlacowkiResult,
     todayOrdersResult,
     orderedPlacowkiResult,
+    activePlacowkiListResult,
   ] = await Promise.all([
     supabase
       .from('placowki')
@@ -36,6 +37,11 @@ export default async function AdminPage() {
       .from('zamowienia')
       .select('placowka_id')
       .eq('data', today),
+    supabase
+      .from('placowki')
+      .select('id, nazwa')
+      .eq('aktywna', true)
+      .order('nazwa', { ascending: true }),
   ])
 
   const activePlacowki = activePlacowkiResult.count ?? 0
@@ -46,6 +52,14 @@ export default async function AdminPage() {
       .filter(Boolean),
   ).size
   const notOrderedToday = Math.max(activePlacowki - orderedToday, 0)
+  const orderedIds = new Set(
+    (orderedPlacowkiResult.data ?? [])
+      .map((order) => order.placowka_id)
+      .filter(Boolean),
+  )
+  const missingPlacowki = (activePlacowkiListResult.data ?? []).filter(
+    (placowka) => !orderedIds.has(placowka.id),
+  )
 
   const stats = {
     activePlacowki,
@@ -71,6 +85,22 @@ export default async function AdminPage() {
             <p className="mt-4 text-4xl font-semibold text-white">
               {stats[card.key]}
             </p>
+            {card.key === 'notOrderedToday' ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {missingPlacowki.length ? (
+                  missingPlacowki.map((placowka) => (
+                    <span
+                      key={placowka.id}
+                      className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-medium text-red-200"
+                    >
+                      {placowka.nazwa}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-slate-400">brak</span>
+                )}
+              </div>
+            ) : null}
           </div>
         ))}
       </section>
