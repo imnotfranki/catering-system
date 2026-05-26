@@ -13,7 +13,7 @@ export interface DriverDelivery {
   adres: string
   status: StatusDostawy
   czas_dostawy: string | null
-  podsumowanie: Record<TypPosilku, { normalne: number; diety: number }>
+  podsumowanie: string
 }
 
 type OrderSummaryRow = {
@@ -31,6 +31,11 @@ type DeliveryRow = {
 }
 
 const mealKeys: TypPosilku[] = ['sniadanie', 'obiad', 'podwieczorek']
+const mealLabels: Record<TypPosilku, string> = {
+  sniadanie: 'Śniadanie',
+  obiad: 'Obiad',
+  podwieczorek: 'Podwieczorek',
+}
 
 export async function getCurrentDriverId() {
   const supabase = createSupabaseServerClient()
@@ -52,24 +57,20 @@ export async function getPodsumowanieZamowienia(
     .eq('placowka_id', placowkaId)
     .eq('data', data)
 
-  return mealKeys.reduce(
-    (summary, meal) => {
+  return mealKeys
+    .map((meal) => {
       const row = (rows ?? []).find((item) => item.posilek === meal)
-      summary[meal] = {
-        normalne: row?.ilosc_normalnych ?? 0,
-        diety: Array.isArray(row?.diety)
-          ? row.diety.reduce((sum: number, dieta: Dieta) => sum + dieta.ilosc, 0)
-          : 0,
-      }
-      return summary
-    },
-    {} as DriverDelivery['podsumowanie'],
-  )
+      const normalne = row?.ilosc_normalnych ?? 0
+      const diety = Array.isArray(row?.diety)
+        ? row.diety.reduce((sum: number, dieta: Dieta) => sum + dieta.ilosc, 0)
+        : 0
+
+      return `${mealLabels[meal]}: ${normalne}${diety ? `+${diety}d` : ''}`
+    })
+    .join(' | ')
 }
 
-export async function getDostawyNaDzis(
-  kierowcaId: string | null,
-): Promise<DriverDelivery[]> {
+export async function getDostawyNaDzis(): Promise<DriverDelivery[]> {
   const supabase = createSupabaseServerClient()
   const today = new Date().toISOString().slice(0, 10)
   const [{ data: orderRows }, { data: deliveryRows }] = await Promise.all([
@@ -85,7 +86,17 @@ export async function getDostawyNaDzis(
   const deliveries = new Map(
     ((deliveryRows ?? []) as DeliveryRow[]).map((row) => [row.placowka_id, row]),
   )
-  const grouped = new Map<string, DriverDelivery>()
+  const grouped = new Map<
+    string,
+    {
+      placowka_id: string
+      nazwa: string
+      adres: string
+      status: StatusDostawy
+      czas_dostawy: string | null
+      summary: Record<TypPosilku, { normalne: number; diety: number }>
+    }
+  >()
 
   ;((orderRows ?? []) as OrderSummaryRow[]).forEach((row) => {
     const placowka = Array.isArray(row.placowki) ? row.placowki[0] : row.placowki
@@ -98,7 +109,7 @@ export async function getDostawyNaDzis(
         adres: placowka?.adres ?? '',
         status: delivery?.status ?? 'oczekuje',
         czas_dostawy: delivery?.czas_dostawy ?? null,
-        podsumowanie: {
+        summary: {
           sniadanie: { normalne: 0, diety: 0 },
           obiad: { normalne: 0, diety: 0 },
           podwieczorek: { normalne: 0, diety: 0 },
@@ -109,30 +120,29 @@ export async function getDostawyNaDzis(
     const item = grouped.get(row.placowka_id)
 
     if (item) {
-      item.podsumowanie[row.posilek] = {
+      item.summary[row.posilek] = {
         normalne: row.ilosc_normalnych,
         diety: (row.diety ?? []).reduce((sum, dieta) => sum + dieta.ilosc, 0),
       }
     }
   })
 
-  if (kierowcaId) {
-    await Promise.all(
-      Array.from(grouped.values()).map((delivery) =>
-        supabase.from('dostawy').upsert(
-          {
-            placowka_id: delivery.placowka_id,
-            data: today,
-            kierowca_id: kierowcaId,
-            status: delivery.status,
-          },
-          { onConflict: 'placowka_id,data' },
-        ),
-      ),
-    )
-  }
+  return Array.from(grouped.values()).map((delivery) => ({
+    placowka_id: delivery.placowka_id,
+    nazwa: delivery.nazwa,
+    adres: delivery.adres,
+    status: delivery.status,
+    czas_dostawy: delivery.czas_dostawy,
+    podsumowanie: mealKeys
+      .map((meal) => {
+        const item = delivery.summary[meal]
 
-  return Array.from(grouped.values()).sort((a, b) => {
+        return `${mealLabels[meal]}: ${item.normalne}${
+          item.diety ? `+${item.diety}d` : ''
+        }`
+      })
+      .join(' | '),
+  })).sort((a, b) => {
     const order: Record<StatusDostawy, number> = {
       w_drodze: 0,
       oczekuje: 1,

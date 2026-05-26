@@ -32,19 +32,6 @@ function nextStatus(status: StatusDostawy): StatusDostawy {
   return 'dostarczone'
 }
 
-function summary(delivery: DriverDelivery) {
-  return [
-    ['Śniadanie', delivery.podsumowanie.sniadanie],
-    ['Obiad', delivery.podsumowanie.obiad],
-    ['Podwieczorek', delivery.podsumowanie.podwieczorek],
-  ]
-    .map(([label, item]) => {
-      const value = item as { normalne: number; diety: number }
-      return `${label}: ${value.normalne}${value.diety ? `+${value.diety}d` : ''}`
-    })
-    .join(' | ')
-}
-
 export function DriverDeliveries({
   date,
   deliveries,
@@ -96,7 +83,7 @@ export function DriverDeliveries({
             <h2 className="text-2xl font-bold">{delivery.nazwa}</h2>
             <p className="mt-2 text-base text-slate-300">{delivery.adres}</p>
             <p className="mt-4 text-sm leading-6 text-slate-200">
-              {summary(delivery)}
+              {delivery.podsumowanie}
             </p>
             <button
               type="button"

@@ -1,11 +1,10 @@
 import { DriverDeliveries } from '@/components/driver-deliveries'
 
-import { getCurrentDriverId, getDostawyNaDzis } from './actions'
+import { getDostawyNaDzis } from './actions'
 
 export default async function KierowcaPage() {
   const today = new Date().toISOString().slice(0, 10)
-  const driverId = await getCurrentDriverId()
-  const deliveries = await getDostawyNaDzis(driverId)
+  const deliveries = await getDostawyNaDzis()
   const dateLabel = new Intl.DateTimeFormat('pl-PL', {
     dateStyle: 'full',
   }).format(new Date(`${today}T00:00:00.000Z`))
