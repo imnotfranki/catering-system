@@ -8,6 +8,7 @@ const navItems = [
   { href: '/admin/placowki', label: 'Placówki' },
   { href: '/admin/jadlospisy', label: 'Jadłospisy' },
   { href: '/admin/zamowienia', label: 'Zamówienia' },
+  { href: '/admin/zakupy', label: 'Lista zakupów' },
   { href: '/admin/uzytkownicy', label: 'Użytkownicy' },
   { href: '/admin/ustawienia', label: 'Ustawienia' },
 ]

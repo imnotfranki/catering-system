@@ -25,3 +25,50 @@ body {
     text-wrap: balance;
   }
 }
+
+@media print {
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  header,
+  aside,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 24px;
+    color: #000000;
+  }
+
+  .print-area {
+    border: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .print-area table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #000000;
+  }
+
+  .print-area th,
+  .print-area td {
+    border: 1px solid #000000;
+    color: #000000 !important;
+    padding: 8px;
+  }
+
+  .print-area tr {
+    background: #ffffff !important;
+  }
+}
