@@ -79,13 +79,12 @@ export async function canPlaceTodayOrder(): Promise<boolean> {
     return true
   }
 
-  const deadlineHour = 23
-  const deadlineMinute = 59
-  const now = new Date()
+  const { deadlineHour, deadlineMinute } = await getDeadlineSettings()
+  const now = getWarsawTime()
 
   return (
-    now.getHours() < deadlineHour ||
-    (now.getHours() === deadlineHour && now.getMinutes() < deadlineMinute)
+    now.hour < deadlineHour ||
+    (now.hour === deadlineHour && now.minute < deadlineMinute)
   )
 }
 
@@ -216,5 +215,46 @@ export async function getCurrentWeekMenu() {
     start,
     end,
     entries: (data ?? []) as JadlospisWpis[],
+  }
+}
+
+async function getDeadlineSettings() {
+  const supabase = createSupabaseServerClient()
+  const { data } = await supabase
+    .from('ustawienia')
+    .select('klucz, wartosc')
+    .in('klucz', ['deadline_godzina', 'deadline_minuta'])
+
+  const settings = Object.fromEntries(
+    (data ?? []).map((item) => [item.klucz, item.wartosc]),
+  )
+  const deadlineHour = Number(settings.deadline_godzina ?? 8)
+  const deadlineMinute = Number(settings.deadline_minuta ?? 0)
+
+  return {
+    deadlineHour:
+      Number.isFinite(deadlineHour) && deadlineHour >= 0 && deadlineHour <= 23
+        ? deadlineHour
+        : 8,
+    deadlineMinute:
+      Number.isFinite(deadlineMinute) &&
+      deadlineMinute >= 0 &&
+      deadlineMinute <= 59
+        ? deadlineMinute
+        : 0,
+  }
+}
+
+function getWarsawTime() {
+  const parts = new Intl.DateTimeFormat('pl-PL', {
+    timeZone: 'Europe/Warsaw',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date())
+
+  return {
+    hour: Number(parts.find((part) => part.type === 'hour')?.value ?? 0),
+    minute: Number(parts.find((part) => part.type === 'minute')?.value ?? 0),
   }
 }

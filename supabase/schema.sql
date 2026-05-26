@@ -32,7 +32,7 @@ create table if not exists public.zamowienia (
   posilek text not null check (posilek in ('sniadanie', 'obiad', 'podwieczorek')),
   ilosc_normalnych integer not null default 0,
   diety jsonb default '[]'::jsonb,
-  status text default 'oczekujace' check (status in ('oczekujace', 'przyjete', 'w_realizacji', 'dostarczone')),
+  status text default 'oczekujace' check (status in ('oczekujace', 'w_realizacji', 'gotowe', 'dostarczone')),
   utworzone_o timestamptz default now(),
   zaktualizowane_o timestamptz default now()
 );
@@ -55,6 +55,23 @@ create table if not exists public.dostawy (
   czas_wyjazdu timestamptz,
   czas_dostawy timestamptz
 );
+
+create table if not exists public.ustawienia (
+  klucz text primary key,
+  wartosc text not null,
+  opis text
+);
+
+insert into public.ustawienia (klucz, wartosc, opis) values
+  ('deadline_godzina', '8', 'Godzina do której placówki mogą składać zamówienia'),
+  ('deadline_minuta', '0', 'Minuta deadline zamówień'),
+  ('nazwa_systemu', 'CateringSystem', 'Nazwa wyświetlana w systemie')
+on conflict (klucz) do nothing;
+
+alter table public.zamowienia drop constraint if exists zamowienia_status_check;
+alter table public.zamowienia
+add constraint zamowienia_status_check
+check (status in ('oczekujace', 'w_realizacji', 'gotowe', 'dostarczone'));
 
 create or replace function public.current_user_role()
 returns public.rola
@@ -97,6 +114,7 @@ alter table public.placowki enable row level security;
 alter table public.zamowienia enable row level security;
 alter table public.jadlospisy enable row level security;
 alter table public.dostawy enable row level security;
+alter table public.ustawienia enable row level security;
 
 drop policy if exists "admin full access profiles" on public.profiles;
 create policy "admin full access profiles"
@@ -170,6 +188,21 @@ for select
 to authenticated
 using (public.current_user_role() = 'kuchnia');
 
+drop policy if exists "kuchnia update zamowienia" on public.zamowienia;
+create policy "kuchnia update zamowienia"
+on public.zamowienia
+for update
+to authenticated
+using (public.current_user_role() = 'kuchnia')
+with check (public.current_user_role() = 'kuchnia');
+
+drop policy if exists "kuchnia select placowki" on public.placowki;
+create policy "kuchnia select placowki"
+on public.placowki
+for select
+to authenticated
+using (public.current_user_role() = 'kuchnia');
+
 drop policy if exists "admin full access jadlospisy" on public.jadlospisy;
 create policy "admin full access jadlospisy"
 on public.jadlospisy
@@ -216,3 +249,18 @@ with check (
   public.current_user_role() = 'kierowca'
   and kierowca_id = auth.uid()
 );
+
+drop policy if exists "wszyscy czytaja ustawienia" on public.ustawienia;
+create policy "wszyscy czytaja ustawienia"
+on public.ustawienia
+for select
+to authenticated
+using (true);
+
+drop policy if exists "admin edytuje ustawienia" on public.ustawienia;
+create policy "admin edytuje ustawienia"
+on public.ustawienia
+for all
+to authenticated
+using (public.current_user_role() = 'admin')
+with check (public.current_user_role() = 'admin');

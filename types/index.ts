@@ -2,8 +2,8 @@ export type Rola = 'admin' | 'placowka' | 'kuchnia' | 'kierowca'
 export type TypPosilku = 'sniadanie' | 'obiad' | 'podwieczorek'
 export type StatusZamowienia =
   | 'oczekujace'
-  | 'przyjete'
   | 'w_realizacji'
+  | 'gotowe'
   | 'dostarczone'
 
 export interface Placowka {
@@ -31,4 +31,10 @@ export interface JadlospisWpis {
   posilek: TypPosilku
   opis: string
   skladniki: { nazwa: string; gramatura_na_porcje: number }[]
+}
+
+export interface Ustawienie {
+  klucz: string
+  wartosc: string
+  opis?: string
 }
