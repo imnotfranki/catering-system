@@ -56,8 +56,25 @@ create table if not exists public.dostawy (
   kierowca_id uuid references public.profiles(id),
   status text default 'oczekujaca',
   czas_wyjazdu timestamptz,
-  czas_dostawy timestamptz
+  czas_dostawy timestamptz,
+  notatka text
 );
+
+alter table public.dostawy
+add column if not exists notatka text;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'dostawy_placowka_data_unique'
+  ) then
+    alter table public.dostawy
+    add constraint dostawy_placowka_data_unique unique (placowka_id, data);
+  end if;
+end
+$$;
 
 create table if not exists public.ustawienia (
   klucz text primary key,
@@ -260,6 +277,30 @@ using (
 with check (
   public.current_user_role() = 'kierowca'
   and kierowca_id = auth.uid()
+);
+
+drop policy if exists "kierowca widzi dostawy" on public.dostawy;
+create policy "kierowca widzi dostawy"
+on public.dostawy
+for select
+to authenticated
+using (
+  public.current_user_role() = 'kierowca'
+  or public.current_user_role() = 'admin'
+);
+
+drop policy if exists "kierowca aktualizuje dostawy" on public.dostawy;
+create policy "kierowca aktualizuje dostawy"
+on public.dostawy
+for all
+to authenticated
+using (
+  public.current_user_role() = 'kierowca'
+  or public.current_user_role() = 'admin'
+)
+with check (
+  public.current_user_role() = 'kierowca'
+  or public.current_user_role() = 'admin'
 );
 
 drop policy if exists "wszyscy czytaja ustawienia" on public.ustawienia;

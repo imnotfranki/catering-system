@@ -5,6 +5,7 @@ export type StatusZamowienia =
   | 'w_realizacji'
   | 'gotowe'
   | 'dostarczone'
+export type StatusDostawy = 'oczekuje' | 'w_drodze' | 'dostarczone'
 
 export interface Placowka {
   id: string

@@ -17,6 +17,7 @@ export interface AdminZamowienie {
   ilosc_normalnych: number
   diety: Dieta[]
   status: StatusZamowienia
+  dostawa_status: 'oczekuje' | 'w_drodze' | 'dostarczone'
 }
 
 export interface SelectPlacowka {
@@ -39,11 +40,20 @@ export async function getZamowieniaByDate(
   data: string,
 ): Promise<AdminZamowienie[]> {
   const supabase = createSupabaseServerClient()
-  const { data: rows } = await supabase
-    .from('zamowienia')
-    .select('id, placowka_id, data, posilek, ilosc_normalnych, diety, status, placowki(nazwa)')
-    .eq('data', data)
-    .order('posilek', { ascending: true })
+  const [{ data: rows }, { data: deliveries }] = await Promise.all([
+    supabase
+      .from('zamowienia')
+      .select('id, placowka_id, data, posilek, ilosc_normalnych, diety, status, placowki(nazwa)')
+      .eq('data', data)
+      .order('posilek', { ascending: true }),
+    supabase.from('dostawy').select('placowka_id, status').eq('data', data),
+  ])
+  const deliveryMap = new Map(
+    (deliveries ?? []).map((delivery) => [
+      delivery.placowka_id,
+      delivery.status as 'oczekuje' | 'w_drodze' | 'dostarczone',
+    ]),
+  )
 
   return ((rows ?? []) as RawZamowienie[]).map((row) => {
     const placowka = Array.isArray(row.placowki)
@@ -59,6 +69,7 @@ export async function getZamowieniaByDate(
       ilosc_normalnych: row.ilosc_normalnych,
       diety: row.diety ?? [],
       status: row.status,
+      dostawa_status: deliveryMap.get(row.placowka_id) ?? 'oczekuje',
     }
   })
 }

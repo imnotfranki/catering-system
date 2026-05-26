@@ -35,6 +35,18 @@ function dietTotal(diety: Dieta[]) {
   return diety.reduce((sum, dieta) => sum + dieta.ilosc, 0)
 }
 
+const deliveryClasses: Record<string, string> = {
+  oczekuje: 'bg-slate-700 text-slate-100',
+  w_drodze: 'bg-yellow-400 text-slate-950',
+  dostarczone: 'bg-[#22c55e] text-slate-950',
+}
+
+const deliveryLabels: Record<string, string> = {
+  oczekuje: 'oczekuje',
+  w_drodze: 'w drodze',
+  dostarczone: 'dostarczone',
+}
+
 interface AdminOrdersProps {
   date: string
   orders: AdminZamowienie[]
@@ -116,6 +128,7 @@ export function AdminOrders({ date, orders, placowki }: AdminOrdersProps) {
                     <th className="px-5 py-4">Porcje normalne</th>
                     <th className="px-5 py-4">Diety</th>
                     <th className="px-5 py-4">Status</th>
+                    <th className="px-5 py-4">Dostawa</th>
                     <th className="px-5 py-4">Akcje</th>
                   </tr>
                 </thead>
@@ -169,6 +182,13 @@ export function AdminOrders({ date, orders, placowki }: AdminOrdersProps) {
                               </option>
                             ))}
                           </select>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${deliveryClasses[row.dostawa_status]}`}
+                          >
+                            {deliveryLabels[row.dostawa_status]}
+                          </span>
                         </td>
                         <td className="px-5 py-4">
                           {isDirty ? (
