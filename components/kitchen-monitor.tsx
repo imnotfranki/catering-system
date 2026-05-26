@@ -155,6 +155,15 @@ export function KitchenMonitor({ initialOrders }: KitchenMonitorProps) {
             (sum, order) => sum + order.ilosc_normalnych,
             0,
           )
+          const dietTotal = mealOrders.reduce(
+            (sum, order) =>
+              sum +
+              order.diety.reduce(
+                (dietSum, dieta) => dietSum + dieta.ilosc,
+                0,
+              ),
+            0,
+          )
           const dietTotals = new Map<string, number>()
 
           mealOrders.forEach((order) => {
@@ -174,7 +183,7 @@ export function KitchenMonitor({ initialOrders }: KitchenMonitorProps) {
               <div className="border-b border-white/10 p-5">
                 <h2 className="text-3xl font-bold">{meal.label}</h2>
                 <p className="mt-3 text-5xl font-black text-[#22c55e]">
-                  {normalTotal} porcji
+                  {normalTotal} porcji + {dietTotal} diety
                 </p>
               </div>
 
