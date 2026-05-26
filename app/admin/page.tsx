@@ -1,7 +1,91 @@
-export default function AdminPage() {
+import Link from 'next/link'
+
+import { createSupabaseAdminClient } from '@/lib/supabase-admin'
+
+const statCards = [
+  { key: 'activePlacowki', label: 'Aktywne placówki' },
+  { key: 'todayOrders', label: 'Zamówienia dziś' },
+  { key: 'orderedToday', label: 'Placówki z zamówieniem dziś' },
+  { key: 'notOrderedToday', label: 'Placówki bez zamówienia dziś' },
+] as const
+
+const navCards = [
+  { href: '/admin/placowki', label: 'Zarządzaj placówkami' },
+  { href: '/admin/jadlospisy', label: 'Jadłospisy' },
+  { href: '/admin/zamowienia', label: 'Zamówienia dziś' },
+]
+
+export default async function AdminPage() {
+  const supabase = createSupabaseAdminClient()
+  const today = new Date().toISOString().slice(0, 10)
+
+  const [
+    activePlacowkiResult,
+    todayOrdersResult,
+    orderedPlacowkiResult,
+  ] = await Promise.all([
+    supabase
+      .from('placowki')
+      .select('id', { count: 'exact', head: true })
+      .eq('aktywna', true),
+    supabase
+      .from('zamowienia')
+      .select('id', { count: 'exact', head: true })
+      .eq('data', today),
+    supabase
+      .from('zamowienia')
+      .select('placowka_id')
+      .eq('data', today),
+  ])
+
+  const activePlacowki = activePlacowkiResult.count ?? 0
+  const todayOrders = todayOrdersResult.count ?? 0
+  const orderedToday = new Set(
+    (orderedPlacowkiResult.data ?? [])
+      .map((order) => order.placowka_id)
+      .filter(Boolean),
+  ).size
+  const notOrderedToday = Math.max(activePlacowki - orderedToday, 0)
+
+  const stats = {
+    activePlacowki,
+    todayOrders,
+    orderedToday,
+    notOrderedToday,
+  }
+
   return (
-    <div className="rounded-lg border border-white/10 bg-slate-950/60 p-8">
-      <h2 className="text-2xl font-semibold">Panel Administratora — w budowie</h2>
+    <div className="space-y-8">
+      <div>
+        <p className="text-sm font-medium text-[#22c55e]">Dashboard</p>
+        <h2 className="mt-2 text-3xl font-semibold">Panel Administratora</h2>
+      </div>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((card) => (
+          <div
+            key={card.key}
+            className="rounded-lg border border-white/10 bg-[#1a1f2e] p-6"
+          >
+            <p className="text-sm text-slate-400">{card.label}</p>
+            <p className="mt-4 text-4xl font-semibold text-white">
+              {stats[card.key]}
+            </p>
+          </div>
+        ))}
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-3">
+        {navCards.map((card) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className="rounded-lg border border-white/10 bg-[#1a1f2e] p-5 font-medium text-slate-100 transition hover:border-[#22c55e] hover:text-[#22c55e]"
+          >
+            {card.label}
+          </Link>
+        ))}
+      </section>
     </div>
   )
 }
