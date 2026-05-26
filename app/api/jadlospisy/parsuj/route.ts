@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 Jadłospis może obejmować jeden lub więcej dni.
 
 Dla każdego dnia zwróć obiekt z:
-- data: string w formacie YYYY-MM-DD (jeśli brak roku przyjmij bieżący rok)
+- data: string w formacie YYYY-MM-DD (jeśli brak roku przyjmij rok 2026)
 - posilki: array obiektów:
   - typ: "sniadanie" | "obiad" | "podwieczorek"
   - opis: string (pełna nazwa dania)
