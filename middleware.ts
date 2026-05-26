@@ -1,112 +1,94 @@
-import { createServerClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-import { getRoleHome, getUserRole } from '@/lib/auth'
-
-const protectedRoutes = {
+const panels: Record<string, string> = {
   admin: '/admin',
   placowka: '/placowka',
   kuchnia: '/kuchnia',
   kierowca: '/kierowca',
-} as const
+}
 
-function getProtectedRoute(pathname: string) {
-  return Object.entries(protectedRoutes).find(([, route]) => {
-    return pathname === route || pathname.startsWith(`${route}/`)
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  let response = NextResponse.next({
+    request: { headers: request.headers },
   })
-}
 
-function redirectIfDifferent(req: NextRequest, pathname: string) {
-  if (req.nextUrl.pathname === pathname) {
-    return NextResponse.next()
-  }
-
-  const redirectUrl = req.nextUrl.clone()
-  redirectUrl.pathname = pathname
-  redirectUrl.search = ''
-
-  return NextResponse.redirect(redirectUrl)
-}
-
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    return res
+    return response
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
-        return req.cookies.getAll()
+        return request.cookies.getAll()
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          req.cookies.set(name, value)
-          res.cookies.set(name, value, options)
+          request.cookies.set(name, value)
+          response.cookies.set(name, value, options)
         })
       },
     },
   })
+
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const { pathname } = req.nextUrl
-  const protectedRoute = getProtectedRoute(pathname)
+  if (pathname.startsWith('/auth')) {
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('rola')
+        .eq('id', user.id)
+        .single()
 
-  if (pathname === '/auth/login') {
-    if (!session) {
-      return res
+      if (profile?.rola) {
+        const target = panels[profile.rola]
+
+        if (target && pathname !== target) {
+          return NextResponse.redirect(new URL(target, request.url))
+        }
+      }
     }
 
-    const role = await getUserRole(supabase)
-
-    if (!role) {
-      return res
-    }
-
-    return redirectIfDifferent(req, getRoleHome(role))
+    return response
   }
 
-  if (pathname === '/') {
-    if (!session) {
-      return redirectIfDifferent(req, '/auth/login')
+  const protectedPaths = ['/admin', '/placowka', '/kuchnia', '/kierowca']
+  const isProtected = protectedPaths.some((path) => pathname.startsWith(path))
+
+  if (isProtected) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
-    const role = await getUserRole(supabase)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('rola')
+      .eq('id', user.id)
+      .single()
 
-    if (!role) {
-      return redirectIfDifferent(req, '/auth/login')
+    if (!profile) {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
-    return redirectIfDifferent(req, getRoleHome(role))
+    const requiredPath = panels[profile.rola]
+
+    if (requiredPath && !pathname.startsWith(requiredPath)) {
+      return NextResponse.redirect(new URL(requiredPath, request.url))
+    }
   }
 
-  if (protectedRoute) {
-    if (!session) {
-      return redirectIfDifferent(req, '/auth/login')
-    }
-
-    const [routeRole] = protectedRoute
-    const role = await getUserRole(supabase)
-
-    if (!role) {
-      return res
-    }
-
-    if (role === routeRole) {
-      return res
-    }
-
-    return redirectIfDifferent(req, getRoleHome(role))
-  }
-
-  return res
+  return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/|.*\\..*).*)'],
 }
