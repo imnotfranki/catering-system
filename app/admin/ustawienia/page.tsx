@@ -49,7 +49,7 @@ export default async function UstawieniaPage({
               type="number"
               min={0}
               max={23}
-              defaultValue={settings.deadline_godzina ?? '8'}
+              defaultValue={settings.deadline_godzina ?? '10'}
               className="w-full rounded-md border border-white/10 bg-[#0f1117] px-4 py-3 text-sm text-white outline-none focus:border-[#22c55e]"
             />
           </label>
@@ -63,7 +63,7 @@ export default async function UstawieniaPage({
               type="number"
               min={0}
               max={59}
-              defaultValue={settings.deadline_minuta ?? '0'}
+              defaultValue={settings.deadline_minuta ?? '30'}
               className="w-full rounded-md border border-white/10 bg-[#0f1117] px-4 py-3 text-sm text-white outline-none focus:border-[#22c55e]"
             />
           </label>

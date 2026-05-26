@@ -101,7 +101,7 @@ export async function submitTodayOrder(
   if (!(await canPlaceTodayOrder())) {
     return {
       error:
-        'Termin składania zamówień minął (8:00). Zadzwoń do biura: +48 530 702 000.',
+        'Termin składania zamówień minął (10:30). Zadzwoń do biura: +48 530 702 000.',
     }
   }
 
@@ -228,20 +228,20 @@ async function getDeadlineSettings() {
   const settings = Object.fromEntries(
     (data ?? []).map((item) => [item.klucz, item.wartosc]),
   )
-  const deadlineHour = Number(settings.deadline_godzina ?? 8)
-  const deadlineMinute = Number(settings.deadline_minuta ?? 0)
+  const deadlineHour = Number(settings.deadline_godzina ?? 10)
+  const deadlineMinute = Number(settings.deadline_minuta ?? 30)
 
   return {
     deadlineHour:
       Number.isFinite(deadlineHour) && deadlineHour >= 0 && deadlineHour <= 23
         ? deadlineHour
-        : 8,
+        : 10,
     deadlineMinute:
       Number.isFinite(deadlineMinute) &&
       deadlineMinute >= 0 &&
       deadlineMinute <= 59
         ? deadlineMinute
-        : 0,
+        : 30,
   }
 }
 

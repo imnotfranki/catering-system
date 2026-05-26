@@ -63,10 +63,12 @@ create table if not exists public.ustawienia (
 );
 
 insert into public.ustawienia (klucz, wartosc, opis) values
-  ('deadline_godzina', '8', 'Godzina do której placówki mogą składać zamówienia'),
-  ('deadline_minuta', '0', 'Minuta deadline zamówień'),
+  ('deadline_godzina', '10', 'Godzina do której placówki mogą składać zamówienia'),
+  ('deadline_minuta', '30', 'Minuta deadline zamówień'),
   ('nazwa_systemu', 'CateringSystem', 'Nazwa wyświetlana w systemie')
-on conflict (klucz) do nothing;
+on conflict (klucz) do update
+set wartosc = excluded.wartosc,
+    opis = excluded.opis;
 
 alter table public.zamowienia drop constraint if exists zamowienia_status_check;
 alter table public.zamowienia

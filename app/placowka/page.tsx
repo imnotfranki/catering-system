@@ -103,7 +103,7 @@ export default async function PlacowkaPage() {
 
       {!canOrder ? (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-5 text-red-100">
-          Termin składania zamówień minął (8:00). Zadzwoń do biura: +48 530
+          Termin składania zamówień minął (10:30). Zadzwoń do biura: +48 530
           702 000.
         </div>
       ) : (

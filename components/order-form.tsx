@@ -187,7 +187,7 @@ export function OrderForm({ action }: OrderFormProps) {
           Razem dziś: {totals.normal} porcji normalnych + {totals.diets} diet
         </p>
         <p className="mt-2 text-sm text-slate-400">
-          Zamówienia przyjmujemy do 8:00
+          Zamówienia przyjmujemy do 10:30
         </p>
         <SubmitButton />
       </div>
